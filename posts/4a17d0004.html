@@ -1,0 +1,277 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>client-go之DyamicClient | Macolm's Blog</title><meta name="author" content="Macolm"><meta name="copyright" content="Macolm"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="DynamicClient是什么 Clientset是一系列RESTClient的集合，创建一个 Clientset 实例，其中已经包含了所有kubernetes内置资源的RESTClient，可是对于CustomResource(CR)资源，Clientset就没有操作它们的RESTClient了。 因此，client-go特意提供了一种 客户端，即 DynamicClient，可以操作任意的k">
+<meta property="og:type" content="article">
+<meta property="og:title" content="client-go之DyamicClient">
+<meta property="og:url" content="http://www.macolm.top/posts/4a17d0004.html">
+<meta property="og:site_name" content="Macolm&#39;s Blog">
+<meta property="og:description" content="DynamicClient是什么 Clientset是一系列RESTClient的集合，创建一个 Clientset 实例，其中已经包含了所有kubernetes内置资源的RESTClient，可是对于CustomResource(CR)资源，Clientset就没有操作它们的RESTClient了。 因此，client-go特意提供了一种 客户端，即 DynamicClient，可以操作任意的k">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://www.macolm.top/img/default_cover_2.webp">
+<meta property="article:published_time" content="2023-09-27T01:13:20.000Z">
+<meta property="article:modified_time" content="2024-07-31T02:46:37.955Z">
+<meta property="article:author" content="Macolm">
+<meta property="article:tag" content="operator开发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://www.macolm.top/img/default_cover_2.webp"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://www.macolm.top/posts/4a17d0004.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=4.12.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar@0.1.16/dist/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.32/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"找不到您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  noticeOutdate: {"limitDay":365,"position":"top","messagePrev":"It has been","messageNext":"days since the last update, the content of the article may be outdated."},
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":230},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: true,
+    post: true
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"你已切换为繁体中文","cht_to_chs":"你已切换为简体中文","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"top-right"},
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.11.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'client-go之DyamicClient',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2024-07-31 10:46:37'
+}</script><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          const now = new Date()
+          const hour = now.getHours()
+          const isNight = hour <= 6 || hour >= 18
+          if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+          else if (t === 'light') activateLightMode()
+          else activateDarkMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><link rel="stylesheet" href="/css/custom.css" media="defer" onload="this.media='all'"><meta name="generator" content="Hexo 7.1.1"></head><body><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/favicon.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">118</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">5</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('/img/default_cover_2.webp')"><nav id="nav"><span id="blog-info"><a href="/" title="Macolm's Blog"><span class="site-name">Macolm's Blog</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">client-go之DyamicClient</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2023-09-27T01:13:20.000Z" title="发表于 2023-09-27 09:13:20">2023-09-27</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-07-31T02:46:37.955Z" title="更新于 2024-07-31 10:46:37">2024-07-31</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/operator%E5%BC%80%E5%8F%91/">operator开发</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="client-go之DyamicClient"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="DynamicClient是什么"><a href="#DynamicClient是什么" class="headerlink" title="DynamicClient是什么"></a>DynamicClient是什么</h2><ul>
+<li>Clientset是一系列RESTClient的集合，创建一个 Clientset 实例，其中已经包含了所有kubernetes内置资源的RESTClient，可是对于CustomResource(CR)资源，Clientset就没有操作它们的RESTClient了。</li>
+<li>因此，client-go特意提供了一种 客户端，即 DynamicClient，可以操作任意的kubernetes资源，包括 内置资源 + CR 资源</li>
+</ul>
+<h2 id="DynamicClient结构体分析"><a href="#DynamicClient结构体分析" class="headerlink" title="DynamicClient结构体分析"></a>DynamicClient结构体分析</h2><ul>
+<li>位于 &#x2F;client-go&#x2F;dynamic&#x2F;simple.go</li>
+<li>DynamicClient结构体<ul>
+<li>可以看到，DynamicClient 中只包含一个RESTClient的字段 client</li>
+<li>client 类型为 rest.Interface，即为 RESTClient实现的那个接口，可以在4.2.2中看到<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">type DynamicClient struct &#123;</span><br><span class="line">   client rest.Interface</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+<h2 id="DynamicClient的常用方法"><a href="#DynamicClient的常用方法" class="headerlink" title="DynamicClient的常用方法"></a>DynamicClient的常用方法</h2><h3 id="dynamic-NewForConfig-方法"><a href="#dynamic-NewForConfig-方法" class="headerlink" title="dynamic.NewForConfig()方法"></a>dynamic.NewForConfig()方法</h3><ul>
+<li>位于 &#x2F;client-go&#x2F;dynamic&#x2F;simple.go，是一个函数，位于dynamic包下，所以直接点就可以使用</li>
+<li>该方法用于创建一个 DynamicClient 实例，入参也是 *rest.Config 类型<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">func NewForConfig(inConfig *rest.Config) (*DynamicClient, error) &#123;</span><br><span class="line">	config := ConfigFor(inConfig)</span><br><span class="line"></span><br><span class="line">	httpClient, err := rest.HTTPClientFor(config)</span><br><span class="line">	if err != nil &#123;</span><br><span class="line">		return nil, err</span><br><span class="line">	&#125;</span><br><span class="line">	return NewForConfigAndClient(config, httpClient)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="DynamicClient-的-实例方法"><a href="#DynamicClient-的-实例方法" class="headerlink" title="DynamicClient 的 实例方法"></a>DynamicClient 的 实例方法</h3><ul>
+<li><p>结论：</p>
+<ul>
+<li>DynamicClient 只有一个实例方法： Resource(resource schema.GroupVersionResource)，用于指定当前 DynamicClient 要操作的究竟是什么类型。<br>下面进行源码分析。</li>
+</ul>
+</li>
+<li><p>Resource()其实是 DynamicClient 实现了接口 dynamic.Interface</p>
+<ul>
+<li>接口中只有一个 Resource()</li>
+<li>参数是一个 GVR，指定group、version、resource，就可以确定到底是哪个资源了</li>
+<li>返回值为 NamespaceableResourceInterface 接口类型<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">type Interface interface &#123;</span><br><span class="line">	Resource(resource schema.GroupVersionResource) NamespaceableResourceInterface</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>DynamicClient 实现了这个接口，自然也实现了Resource这个方法</p>
+<ul>
+<li>下面代码返回的是 NamespaceableResourceInterface 接口的实现类型 dynamicResourceClient 的对象</li>
+<li>这个对象就是我们最终可以用于操作 你所指定资源 的 Client 了<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">func (c *DynamicClient) Resource(resource schema.GroupVersionResource) NamespaceableResourceInterface &#123;</span><br><span class="line">	return &amp;dynamicResourceClient&#123;client: c, resource: resource&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>dynamicResourceClient 类型</p>
+<ul>
+<li>可见，dynamicResourceClient 包含了DynamicClient对象、要操作的类型的GVR、还有资源的ns<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">type dynamicResourceClient struct &#123;</span><br><span class="line">	client    *DynamicClient</span><br><span class="line">	namespace string</span><br><span class="line">	resource  schema.GroupVersionResource</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>可以调用它的Namespace方法，为namespace字段赋值</p>
+<ul>
+<li>这个方法就是NamespaceableResourceInterface 接口提供的<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">func (c *dynamicResourceClient) Namespace(ns string) ResourceInterface &#123;</span><br><span class="line">	ret := *c</span><br><span class="line">	ret.namespace = ns</span><br><span class="line">	return &amp;ret</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+<h2 id="认识kubrenetes-的-Unstructured"><a href="#认识kubrenetes-的-Unstructured" class="headerlink" title="认识kubrenetes 的 Unstructured"></a>认识kubrenetes 的 Unstructured</h2><h3 id="为什么需要-Unstructured"><a href="#为什么需要-Unstructured" class="headerlink" title="为什么需要 Unstructured"></a>为什么需要 Unstructured</h3><ul>
+<li>前面我们使用 RESTClient 或 Clientset，调用的是某个资源的 Get、List 等方法，返回值都是确定的。比如 调用Pod资源的List，我们能够确定返回的一定是PodList，所以Pod的List方法，就写死了，返回值就是PodList</li>
+<li>可当使用 DynamicClient 时，DynamicClient 没有确定的资源，资源类型是我们使用的时候才会去指定GVR的，所以 开发DynamicClient 的时候，Get 方法自然无法确定返回值类型。</li>
+<li>那么kubernetes人员应该如何开发这个Get方法？</li>
+<li>我们自然而然的能够想到，如果有一个通用的数据结构，可以表示所有类型的资源，问题就解决了</li>
+<li>Unstructured 应运而生。它就是一个 可以表示所有资源的类型。</li>
+</ul>
+<h3 id="Unstructured源码"><a href="#Unstructured源码" class="headerlink" title="Unstructured源码"></a>Unstructured源码</h3><ul>
+<li><p>位于 staging&#x2F;src&#x2F;k8s.io&#x2F;apimachinery&#x2F;pkg&#x2F;apis&#x2F;meta&#x2F;v1&#x2F;unsructured&#x2F;unsructured.go 中<br>  Unstructured 结构</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">type Unstructured struct &#123;</span><br><span class="line">	// Object is a JSON compatible map with string, float, int, bool, []interface&#123;&#125;, or</span><br><span class="line">	// map[string]interface&#123;&#125;</span><br><span class="line">	// children.</span><br><span class="line">	Object map[string]interface&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>Unstructured 包含一个 map，键为string，value为interface{}，因此value可以为任意类型</p>
+</li>
+</ul>
+<h3 id="dynamicResourceClient对于-Unstructured-的应用"><a href="#dynamicResourceClient对于-Unstructured-的应用" class="headerlink" title="dynamicResourceClient对于 Unstructured 的应用"></a>dynamicResourceClient对于 Unstructured 的应用</h3><ul>
+<li>我们最终操作资源，其实使用的是 dynamicResourceClient,dynamicResourceClient 实现了 ResourceInterface 接口的所有方法，这些方法就是我们最终操作资源所调用的。下面我们看一下 ResourceInterface 接口的所有方法签名<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">type ResourceInterface interface &#123;</span><br><span class="line">	Create(ctx context.Context, obj *unstructured.Unstructured, options metav1.CreateOptions, subresources ...string) (*unstructured.Unstructured, error)</span><br><span class="line">	Update(ctx context.Context, obj *unstructured.Unstructured, options metav1.UpdateOptions, subresources ...string) (*unstructured.Unstructured, error)</span><br><span class="line">	UpdateStatus(ctx context.Context, obj *unstructured.Unstructured, options metav1.UpdateOptions) (*unstructured.Unstructured, error)</span><br><span class="line">	Delete(ctx context.Context, name string, options metav1.DeleteOptions, subresources ...string) error</span><br><span class="line">	DeleteCollection(ctx context.Context, options metav1.DeleteOptions, listOptions metav1.ListOptions) error</span><br><span class="line">	Get(ctx context.Context, name string, options metav1.GetOptions, subresources ...string) (*unstructured.Unstructured, error)</span><br><span class="line">	List(ctx context.Context, opts metav1.ListOptions) (*unstructured.UnstructuredList, error)</span><br><span class="line">	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)</span><br><span class="line">	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, options metav1.PatchOptions, subresources ...string) (*unstructured.Unstructured, error)</span><br><span class="line">	Apply(ctx context.Context, name string, obj *unstructured.Unstructured, options metav1.ApplyOptions, subresources ...string) (*unstructured.Unstructured, error)</span><br><span class="line">	ApplyStatus(ctx context.Context, name string, obj *unstructured.Unstructured, options metav1.ApplyOptions) (*unstructured.Unstructured, error)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>Create方法因为不知道要创建什么资源，所以参数接收的是 obj *unstructured.Unstructured</li>
+<li>Get方法因为不知道返回的是什么资源，所以返回的是 *unstructured.Unstructured</li>
+<li>List方法因为不知道返回的是什么资源列表，所以返回的是 *unstructured.UnstructuredList。这个结构里面包含一个 []unstructured.Unstructured</li>
+</ul>
+<h3 id="Unstructured-与-资源对象的相互转换"><a href="#Unstructured-与-资源对象的相互转换" class="headerlink" title="Unstructured 与 资源对象的相互转换"></a>Unstructured 与 资源对象的相互转换</h3><ul>
+<li><p>既然 dynamicResourceClient 的方法 接收和返回的，很多都是 Unstructured 类型，那么我们就需要实现 真正的资源对象 与 Unstructured 的 相互转换</p>
+</li>
+<li><p>runtime包下，给我们提供了一个 UnstructuredConverter 接口，接口中提供了两个方法，分别用于 资源对象–&gt;Unstructured 和 Unstructured–&gt;资源对象</p>
+<ul>
+<li>位于 staging&#x2F;src&#x2F;k8s.io&#x2F;apimachinery&#x2F;pkg&#x2F;runtime&#x2F;converter.go<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">type UnstructuredConverter interface &#123;</span><br><span class="line">   ToUnstructured(obj interface&#123;&#125;) (map[string]interface&#123;&#125;, error)</span><br><span class="line">   FromUnstructured(u map[string]interface&#123;&#125;, obj interface&#123;&#125;) error</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>UnstructuredConverter 接口只有一个实现类 unstructuredConverter</p>
+<ul>
+<li>位于 staging&#x2F;src&#x2F;k8s.io&#x2F;apimachinery&#x2F;pkg&#x2F;runtime&#x2F;converter.go<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">type unstructuredConverter struct &#123;</span><br><span class="line">	// If true, we will be additionally running conversion via json</span><br><span class="line">	// to ensure that the result is true.</span><br><span class="line">	// This is supposed to be set only in tests.</span><br><span class="line">	mismatchDetection bool</span><br><span class="line">	// comparison is the default test logic used to compare</span><br><span class="line">	comparison conversion.Equalities</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>unstructuredConverter 实现了UnstructuredConverter 接口的 两个方法</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">func (c *unstructuredConverter) ToUnstructured(obj interface&#123;&#125;) (map[string]interface&#123;&#125;, error)：资源对象–&gt;Unstructured</span><br><span class="line">func (c *unstructuredConverter) FromUnstructured(u map[string]interface&#123;&#125;, obj interface&#123;&#125;) error：Unstructured–&gt;资源对象</span><br></pre></td></tr></table></figure>
+<p>不过，unstructuredConverter 类型开头小写，我们无法直接使用，kubernetes 创建了一个全局变量 DefaultUnstructuredConverter，类型就是unstructuredConverter，用以供外界使用;位于 staging&#x2F;src&#x2F;k8s.io&#x2F;apimachinery&#x2F;pkg&#x2F;runtime&#x2F;converter.go</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">var (</span><br><span class="line">	......</span><br><span class="line">	// DefaultUnstructuredConverter performs unstructured to Go typed object conversions.</span><br><span class="line">	DefaultUnstructuredConverter = &amp;unstructuredConverter&#123;</span><br><span class="line">		mismatchDetection: parseBool(os.Getenv(&quot;KUBE_PATCH_CONVERSION_DETECTOR&quot;)),</span><br><span class="line">		comparison: conversion.EqualitiesOrDie(</span><br><span class="line">			func(a, b time.Time) bool &#123;</span><br><span class="line">				return a.UTC() == b.UTC()</span><br><span class="line">			&#125;,</span><br><span class="line">		),</span><br><span class="line">	&#125;</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>总结：我们直接使用 runtime.DefaultUnstructuredConverter，调用它的 ToUnstructured 或 FromUnstructured 方法，就可以实现 Unstructured 与 资源对象的相互转换 了</p>
+</li>
+</ul>
+<h2 id="DynamicClient使用示例"><a href="#DynamicClient使用示例" class="headerlink" title="DynamicClient使用示例"></a>DynamicClient使用示例</h2><ul>
+<li>需求：获取 kube-system 命名空间下 name&#x3D;coredns 的 deploy 对象</li>
+<li>步骤<ul>
+<li>同样是先 创建一个客户端配置config</li>
+<li>使用 dynamic.NewForConfig()，创建一个 DynamicClient 对象</li>
+<li>使用 DynamicClient.Resource()，指定要操作的资源对象，获取到该资源的 Client</li>
+<li>先为该Client指定ns，然后调用 Client 的 Get() 方法，获取到该资源对象</li>
+<li>调用 runtime.DefaultUnstructuredConverter.FromUnstructured()，将 unstructured 反序列化成 Deployment 对象<br>代码编写<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">package main</span><br><span class="line"></span><br><span class="line">import (</span><br><span class="line">	&quot;context&quot;</span><br><span class="line">	&quot;fmt&quot;</span><br><span class="line">	appsv1 &quot;k8s.io/api/apps/v1&quot;</span><br><span class="line">	metav1 &quot;k8s.io/apimachinery/pkg/apis/meta/v1&quot;</span><br><span class="line">	&quot;k8s.io/apimachinery/pkg/runtime&quot;</span><br><span class="line">	&quot;k8s.io/apimachinery/pkg/runtime/schema&quot;</span><br><span class="line">	&quot;k8s.io/client-go/dynamic&quot;</span><br><span class="line">	&quot;k8s.io/client-go/tools/clientcmd&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">func main() &#123;</span><br><span class="line">	// 同样是先 创建一个客户端配置config</span><br><span class="line">	config, err := clientcmd.BuildConfigFromFlags(&quot;&quot;, clientcmd.RecommendedHomeFile)</span><br><span class="line">	if err != nil &#123;</span><br><span class="line">		panic(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	// 使用 dynamic.NewForConfig()，创建一个 DynamicClient 对象</span><br><span class="line">	dynamicClient, err := dynamic.NewForConfig(config)</span><br><span class="line">	if err != nil &#123;</span><br><span class="line">		panic(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	// 使用 DynamicClient.Resource()，指定要操作的资源对象，获取到该资源的 Client</span><br><span class="line">	dynamicResourceClient := dynamicClient.Resource(schema.GroupVersionResource&#123;</span><br><span class="line">		Group:    &quot;apps&quot;,</span><br><span class="line">		Version:  &quot;v1&quot;,</span><br><span class="line">		Resource: &quot;deployments&quot;,</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	// 先为该Client指定ns，然后调用 Client 的 Get() 方法，获取到该资源对象</span><br><span class="line">	unstructured, err := dynamicResourceClient.</span><br><span class="line">		Namespace(&quot;kube-system&quot;).</span><br><span class="line">		Get(context.TODO(), &quot;coredns&quot;, metav1.GetOptions&#123;&#125;)</span><br><span class="line">	if err != nil &#123;</span><br><span class="line">		panic(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	// 调用 runtime.DefaultUnstructuredConverter.FromUnstructured()，将 unstructured 反序列化成 Deployment 对象</span><br><span class="line">	deploy := &amp;appsv1.Deployment&#123;&#125;</span><br><span class="line">	err = runtime.DefaultUnstructuredConverter.FromUnstructured(unstructured.UnstructuredContent(), deploy)</span><br><span class="line">	if err != nil &#123;</span><br><span class="line">		panic(err)</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	// 打印 deploy 名称和命名空间</span><br><span class="line">	fmt.Printf(&quot;deploy.Name: %s\ndeploy.namespace: %s&quot;, deploy.Name, deploy.Namespace)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+  输出结果<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">deploy.Name: coredns</span><br><span class="line">deploy.namespace: kube-system</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="http://www.macolm.top">Macolm</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="http://www.macolm.top/posts/4a17d0004.html">http://www.macolm.top/posts/4a17d0004.html</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://www.macolm.top" target="_blank">Macolm's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/operator%E5%BC%80%E5%8F%91/">operator开发</a></div><div class="post_share"><div class="social-share" data-image="/img/default_cover_2.webp" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/posts/4a17d0005.html" title="client-go之DiscoveryClient"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/default_cover_23.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">client-go之DiscoveryClient</div></div></a></div><div class="next-post pull-right"><a href="/posts/4a17d0003.html" title="client-go之ClientSet"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/default_cover_23.webp" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">client-go之ClientSet</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/posts/4a17d0018.html" title="kubebuilder 实战演练 之 自定义CronJob(一)"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/default_cover_27.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-11-22</div><div class="title">kubebuilder 实战演练 之 自定义CronJob(一)</div></div></a></div><div><a href="/posts/4a17d0007.html" title="Operator开发之CRD篇"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/default_cover_9.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-10-11</div><div class="title">Operator开发之CRD篇</div></div></a></div><div><a href="/posts/4a17d0008.html" title="Operator开发之code-generator篇"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/default_cover_16.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-10-15</div><div class="title">Operator开发之code-generator篇</div></div></a></div><div><a href="/posts/4a17d0009.html" title="code-generator实战：为CRD生成代码"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/default_cover_27.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-10-19</div><div class="title">code-generator实战：为CRD生成代码</div></div></a></div><div><a href="/posts/4a17d0003.html" title="client-go之ClientSet"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/default_cover_23.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-09-22</div><div class="title">client-go之ClientSet</div></div></a></div><div><a href="/posts/4a17d0005.html" title="client-go之DiscoveryClient"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/default_cover_23.webp" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-10-01</div><div class="title">client-go之DiscoveryClient</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/favicon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">Macolm</div><div class="author-info__description">技术随笔</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">118</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">5</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>个人卡片信息</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#DynamicClient%E6%98%AF%E4%BB%80%E4%B9%88"><span class="toc-number">1.</span> <span class="toc-text">DynamicClient是什么</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DynamicClient%E7%BB%93%E6%9E%84%E4%BD%93%E5%88%86%E6%9E%90"><span class="toc-number">2.</span> <span class="toc-text">DynamicClient结构体分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DynamicClient%E7%9A%84%E5%B8%B8%E7%94%A8%E6%96%B9%E6%B3%95"><span class="toc-number">3.</span> <span class="toc-text">DynamicClient的常用方法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#dynamic-NewForConfig-%E6%96%B9%E6%B3%95"><span class="toc-number">3.1.</span> <span class="toc-text">dynamic.NewForConfig()方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#DynamicClient-%E7%9A%84-%E5%AE%9E%E4%BE%8B%E6%96%B9%E6%B3%95"><span class="toc-number">3.2.</span> <span class="toc-text">DynamicClient 的 实例方法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%A4%E8%AF%86kubrenetes-%E7%9A%84-Unstructured"><span class="toc-number">4.</span> <span class="toc-text">认识kubrenetes 的 Unstructured</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81-Unstructured"><span class="toc-number">4.1.</span> <span class="toc-text">为什么需要 Unstructured</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Unstructured%E6%BA%90%E7%A0%81"><span class="toc-number">4.2.</span> <span class="toc-text">Unstructured源码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#dynamicResourceClient%E5%AF%B9%E4%BA%8E-Unstructured-%E7%9A%84%E5%BA%94%E7%94%A8"><span class="toc-number">4.3.</span> <span class="toc-text">dynamicResourceClient对于 Unstructured 的应用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Unstructured-%E4%B8%8E-%E8%B5%84%E6%BA%90%E5%AF%B9%E8%B1%A1%E7%9A%84%E7%9B%B8%E4%BA%92%E8%BD%AC%E6%8D%A2"><span class="toc-number">4.4.</span> <span class="toc-text">Unstructured 与 资源对象的相互转换</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DynamicClient%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B"><span class="toc-number">5.</span> <span class="toc-text">DynamicClient使用示例</span></a></li></ol></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2022 - 2024 By Macolm</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=4.12.0"></script><script src="/js/main.js?v=4.12.0"></script><script src="/js/tw_cn.js?v=4.12.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.32/dist/fancybox/fancybox.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page@5.2.0/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@17.8.5/dist/lazyload.iife.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar@0.1.16/dist/snackbar.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu@4.0.7/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><div class="js-pjax"></div><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="30" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/dist/canvas-nest.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=4.12.0"></script></div></div></body></html>
